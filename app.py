@@ -102,7 +102,7 @@ def scrape_most_searched():
             most_searched_div = soup.find("div", class_="most-searched")
 
         if not most_searched_div:
-            return {"error": "Could not find most-searched section"}, 404
+            return {"error": "Could not find most-searched section"}
 
         results = []
         for link in most_searched_div.find_all("a"):
@@ -117,7 +117,7 @@ def scrape_most_searched():
                 })
         return results
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def search_anime(keyword):
     try:
@@ -141,7 +141,7 @@ def search_anime(keyword):
             year = ""
             rating = ""
             total_eps = ""
-            
+
             for span in item.select(".info span"):
                 cls = span.get("class", [])
                 if "sub" in cls: sub = span.get_text(strip=True)
@@ -170,7 +170,7 @@ def search_anime(keyword):
                 })
         return results
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def scrape_home():
     try:
@@ -186,9 +186,9 @@ def scrape_home():
             title = title_tag.get_text(strip=True) if title_tag else ""
             japanese_title = title_tag.get("data-jp", "") if title_tag else ""
             description = slide.select_one("p.desc").get_text(strip=True) if slide.select_one("p.desc") else ""
-            
+
             sub, dub, anime_type = parse_info_spans(slide.select_one(".info"))
-            
+
             genres = ""
             info_el = slide.select_one(".info")
             if info_el:
@@ -230,9 +230,9 @@ def scrape_home():
             href = item.select_one("a.poster").get("href", "") if item.select_one("a.poster") else ""
             episode = href.split("#ep=")[-1] if "#ep=" in href else ""
             href = href.split("#ep=")[0]
-            
+
             sub, dub, anime_type = parse_info_spans(item.select_one(".info"))
-            
+
             if title_tag:
                 latest.append({
                     "title": title_tag.get_text(strip=True),
@@ -254,7 +254,7 @@ def scrape_home():
                 style = item.get("style", "")
                 poster = style.split("url(")[1].split(")")[0] if "url(" in style else ""
                 sub, dub, anime_type = parse_info_spans(item.select_one(".info"))
-                
+
                 items.append({
                     "rank": item.select_one(".num").get_text(strip=True) if item.select_one(".num") else "",
                     "title": item.select_one(".detail .title").get_text(strip=True) if item.select_one(".detail .title") else "",
@@ -269,7 +269,7 @@ def scrape_home():
 
         return {"banner": banner, "latest_updates": latest, "top_trending": trending}
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def scrape_anime_info(slug):
     try:
@@ -286,7 +286,7 @@ def scrape_anime_info(slug):
 
         info_el = soup.select_one(".main-entity .info")
         sub, dub, atype = parse_info_spans(info_el)
-        
+
         detail = {}
         for div in soup.select(".detail > div > div"):
             text = div.get_text(separator="|", strip=True)
@@ -327,13 +327,13 @@ def scrape_anime_info(slug):
             "seasons": seasons,
         }
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def fetch_episodes(ani_id):
     try:
         encoded = encode_token(ani_id)
-        if not encoded: return {"error": "Token encryption failed"}, 500
-        
+        if not encoded: return {"error": "Token encryption failed"}
+
         response = requests.get(ANIMEKAI_EPISODES_URL, params={"ani_id": ani_id, "_": encoded}, headers=AJAX_HEADERS, timeout=15)
         response.raise_for_status()
         html = response.json().get("result", "")
@@ -354,13 +354,13 @@ def fetch_episodes(ani_id):
             })
         return episodes
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def fetch_servers(ep_token):
     try:
         encoded = encode_token(ep_token)
-        if not encoded: return {"error": "Token encryption failed"}, 500
-        
+        if not encoded: return {"error": "Token encryption failed"}
+
         response = requests.get(ANIMEKAI_SERVERS_URL, params={"token": ep_token, "_": encoded}, headers=AJAX_HEADERS, timeout=15)
         response.raise_for_status()
         html = response.json().get("result", "")
@@ -375,27 +375,27 @@ def fetch_servers(ep_token):
                 "episode_id": s.get("data-eid", ""),
                 "link_id": s.get("data-lid", ""),
             } for s in group.select(".server")]
-        
+
         return {
             "watching": soup.select_one(".server-note p").get_text(strip=True) if soup.select_one(".server-note p") else "",
             "servers": servers
         }
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
 
 def resolve_source(link_id):
     try:
         encoded = encode_token(link_id)
-        if not encoded: return {"error": "Token encryption failed"}, 500
+        if not encoded: return {"error": "Token encryption failed"}
 
         resp = requests.get(ANIMEKAI_LINKS_VIEW_URL, params={"id": link_id, "_": encoded}, headers=AJAX_HEADERS, timeout=15)
         resp.raise_for_status()
         encrypted_result = resp.json().get("result", "")
-        
+
         embed_data = decode_kai(encrypted_result)
-        if not embed_data: return {"error": "Embed decryption failed"}, 500
+        if not embed_data: return {"error": "Embed decryption failed"}
         embed_url = embed_data.get("url", "")
-        if not embed_url: return {"error": "No embed URL found"}, 500
+        if not embed_url: return {"error": "No embed URL found"}
 
         video_id = embed_url.rstrip("/").split("/")[-1]
         embed_base = embed_url.rsplit("/e/", 1)[0] if "/e/" in embed_url else embed_url.rsplit("/", 1)[0]
@@ -404,7 +404,7 @@ def resolve_source(link_id):
         encrypted_media = media_resp.json().get("result", "")
 
         final_data = decode_mega(encrypted_media)
-        if not final_data: return {"error": "Media decryption failed"}, 500
+        if not final_data: return {"error": "Media decryption failed"}
 
         return {
             "embed_url": embed_url,
@@ -414,7 +414,10 @@ def resolve_source(link_id):
             "download": final_data.get("download", ""),
         }
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e)}
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 def index():
@@ -453,7 +456,7 @@ def api_home():
 @app.route("/api/anime/<slug>", methods=["GET"])
 def api_anime_info(slug):
     res = scrape_anime_info(slug)
-    return (jsonify(res), 500) if "error" in res else jsonify({"success": True, **res})
+    return (jsonify(res), 500) if isinstance(res, dict) and "error" in res else jsonify({"success": True, **res})
 
 @app.route("/api/episodes/<ani_id>", methods=["GET"])
 def api_episodes(ani_id):
@@ -463,12 +466,13 @@ def api_episodes(ani_id):
 @app.route("/api/servers/<ep_token>", methods=["GET"])
 def api_servers(ep_token):
     res = fetch_servers(ep_token)
-    return (jsonify(res), 500) if "error" in res else jsonify({"success": True, **res})
+    return (jsonify(res), 500) if isinstance(res, dict) and "error" in res else jsonify({"success": True, **res})
 
 @app.route("/api/source/<link_id>", methods=["GET"])
 def api_source(link_id):
     res = resolve_source(link_id)
-    return (jsonify(res), 500) if "error" in res else jsonify({"success": True, **res})
+    return (jsonify(res), 500) if isinstance(res, dict) and "error" in res else jsonify({"success": True, **res})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
